@@ -162,7 +162,7 @@ class PlottingCanvas(tk.Frame):
     def clear(self):
         self.set_range([])
         self.set_fits([])
-        self.set_spectrum(self.set_spectrum)
+        self.set_spectrum(self.spectrum)
         self.redraw()
 
     def addFits(self, fits,range,amplification):
