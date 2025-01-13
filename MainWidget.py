@@ -120,17 +120,16 @@ class gui():
         self.a2Label = Label(button_frame, text="a2:").grid(row=2, column=4)
         self.a2Entry = Entry(button_frame, textvariable=self.a2).grid(row=2, column=5)
     
-        
         menubar = Menu(self.root)
         filemenu = Menu(menubar, tearoff=0) 
         elementmenu = Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="Elements", menu=elementmenu)
         elementmenu.add_command(label="Periodic Table", command=lambda: self.periodicTable.show(self.selected_elements))
         filemenu.add_command(label="Open", command=self.open)
         filemenu.add_command(label="Open Background", command=self.openBackground)
         filemenu.add_separator()
         filemenu.add_command(label="Exit", command=self.root.quit)
         menubar.add_cascade(label="File", menu=filemenu)
+        menubar.add_cascade(label="Elements", menu=elementmenu)
         self.root.config(menu=menubar)
         console_frame = Frame(self.root)
         console_frame.grid(row=0, column=1,rowspan=300,columnspan=2)
@@ -242,7 +241,6 @@ class gui():
             print("Fit for range: ", self.plotter.selected_ranges[i], "eV")
             print(result[0].fit_report())
             print("Area: ", result[2] ,"+- ", result[3],"eV*counts")
-            results[i] = [result[0],result[1]]
             print("\n\n")
         self.plotter.set_fits(results)
         self.plotter.redraw()    

@@ -5,6 +5,7 @@ import matplotlib
 matplotlib.use("TkAgg")
 from matplotlib.figure import Figure 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.lines import Line2D
 import pandas as pd
 from matplotlib.widgets import SpanSelector,RectangleSelector
 import numpy as np
@@ -33,7 +34,7 @@ class PlottingCanvas(tk.Frame):
     
     def __init__(self, parent):
         tk.Frame.__init__(self, parent)
-        self.fig = Figure(figsize=(16,7), dpi=100)
+        self.fig = Figure(figsize=(16,8), dpi=100)
         self.ax = self.fig .add_subplot()
         self.canvas = FigureCanvasTkAgg(self.fig, self)  
         button = Button(self, text="clear", command=self.clear)
@@ -90,8 +91,29 @@ class PlottingCanvas(tk.Frame):
             
     def hover(self,event):
         if event.inaxes == self.ax:
+            if(self.ax.get_legend() != None):
+                self.ax.legend().remove()
             x = event.xdata
             y = event.ydata
+            for k,range in enumerate(self.selected_ranges):
+                if x >= range[0] and x <= range[1]:
+                    fit = self.fits[k][0]
+                    background = self.fits[k][1]
+
+                    x_arg = np.argmin(abs(self.spectrum["Energy"][self.spectrum["Energy"].between(range[0],range[-1])] -x))
+                    amplified_background = amplify(self.spectrum["Energy"][self.spectrum["Energy"].between(range[0],range[-1])],background,self.amplification)
+                    amplified_fit = amplify(self.spectrum["Energy"][self.spectrum["Energy"].between(range[0],range[-1])],fit.best_fit,self.amplification)
+                    if(y>amplified_background[x_arg] and y<amplified_fit[x_arg]):
+                        fit = self.fits[k][0]
+                        height = fit.params["height"].value
+                        height_err = fit.params["height"].stderr
+                        FWHM = fit.params["fwhm"].value
+                        FWHM_err = fit.params["fwhm"].stderr
+                        center = fit.params["center"].value
+                        center_err = fit.params["center"].stderr
+                        counts = self.fits[k][2]
+                        counts_err = abs(self.fits[k][3])
+                        self.ax.legend([Line2D([0],[0],color="red",lw=4)],["Height: (%f $\pm$ %f)\nFWHM: (%f $\pm$ %f) keV\nCenter: (%f $\pm$ %f) keV\nCounts:  (%f $\pm$ %f)"%(height,height_err,FWHM,FWHM_err,center,center_err,counts,counts_err)],loc="upper right")
 
             if(self.closest_peak in self.ax.lines):
                 self.closest_peak.remove()
@@ -101,10 +123,10 @@ class PlottingCanvas(tk.Frame):
             if self.hoverline not in  self.ax.lines and self.closest_peak_[0] == None:
                 self.hoverline = self.ax.axvline(x=x, color="r", linestyle="--",alpha=0.3)
                 self.countsLabel = self.ax.text(x*1, y*1, f"{y:.2f} counts", color="black")    
-                self.EnergyLabel = self.ax.text(x-10, self.ax.get_ylim()[1]*1.02, f"{x:.2f} keV", color="black",rotation=90)
+                self.EnergyLabel = self.ax.text(x, self.ax.get_ylim()[1]*1.02, f"{x:.2f} keV", color="black",rotation=90)
             elif(self.closest_peak_[0] == None):
                 self.hoverline.set_xdata([x])
-                self.EnergyLabel.set_x(x-10)
+                self.EnergyLabel.set_x(x)
                 self.countsLabel.set_x(x*1.02)
                 self.countsLabel.set_text(f"{y:.2f}")
                 self.countsLabel.set_y(y*1.02)
@@ -116,7 +138,7 @@ class PlottingCanvas(tk.Frame):
                     self.countsLabel.remove()
                 x_peak = database[self.closest_peak_[0]][self.closest_peak_[1]][0]
                 self.closest_peak = self.ax.axvline(x=x_peak, color="green", linestyle="--",alpha=0.5)
-                self.closest_peakLabel =  self.ax.text(x_peak-20, self.ax.get_ylim()[1]*1.02, str(database[self.closest_peak_[0]][self.closest_peak_[1]][1]), rotation=90)
+                self.closest_peakLabel =  self.ax.text(x_peak, self.ax.get_ylim()[1]*1.01, str(database[self.closest_peak_[0]][self.closest_peak_[1]][1])+" " + str(database[self.closest_peak_[0]][self.closest_peak_[1]][0]) + " keV", rotation=90)
             self.canvas.draw()
         else:
             if(self.hoverline in self.ax.lines or self.closest_peak in self.ax.lines):
@@ -229,7 +251,7 @@ class PlottingCanvas(tk.Frame):
         for range in self.selected_ranges:
             y = self.spectrum['Data'][self.spectrum['Energy'].between(range[0], range[1])]
             x=np.linspace(range[0],range[1],len(y))
-            self.ax.fill_between(x=x, y1=np.zeros(len(y)),y2= amplify(x,y,self.amplification), color="tab:orange",alpha=0.2)
+            self.ax.fill_between(x=x, y1=np.zeros(len(y)),y2= amplify(x,y,self.amplification), color="tab:blue",alpha=0.2)
     def drawFits(self):
         for i,fit_ in enumerate(self.fits):
             fit = fit_[0]
